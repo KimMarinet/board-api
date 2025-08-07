@@ -7,9 +7,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.koreait.global.exceptions.BadRequestException;
 import org.koreait.global.libs.Utils;
+import org.koreait.member.jwt.TokenService;
 import org.koreait.member.services.JoinService;
 import org.koreait.member.validators.JoinValidator;
+import org.koreait.member.validators.TokenValidator;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +24,8 @@ public class MemberController {
 
     private final JoinValidator joinValidator;
     private final JoinService joinService;
+    private final TokenValidator tokenValidator;
+    private final TokenService tokenService;
     private final Utils utils;
 
     // RequestBody 이게 없으면 Json을 인식하지 못함!!
@@ -37,5 +42,33 @@ public class MemberController {
         }
 
         joinService.process(form);
+    }
+
+    /**
+     * 회원 계정(이메일, 비밀번호)로 JWT 토큰 발급
+     * @return
+     */
+    @PostMapping("/token")
+    public String token(@Valid @RequestBody RequestToken form, Errors errors){
+
+        tokenValidator.validate(form, errors);
+
+        if(errors.hasErrors()){
+            throw new BadRequestException(utils.getErrorMessages(errors));
+        }
+
+        return tokenService.create(form.getEmail());
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/test1")
+    public void test1(){
+        System.out.println("로그인 시 접근 가능");
+    }
+
+    @PreAuthorize("hasAnyAuthority('ADMIN')")
+    @GetMapping("/test2")
+    public void test2(){
+        System.out.println("관리자만 접근 가능");
     }
 }
