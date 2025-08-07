@@ -33,6 +33,8 @@ public class SecurityConfig {
                     c.anyRequest().permitAll();
                 });
 
+
+
         return http.build();
     }
 
